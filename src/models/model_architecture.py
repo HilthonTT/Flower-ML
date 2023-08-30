@@ -15,6 +15,7 @@ from keras.layers import (
 from keras.regularizers import L2
 
 IMAGE_SIZE = 224
+FLOWERS_COUNT = 5
 
 def create_rescale_layers() -> Sequential:
     layers = Sequential([
@@ -72,5 +73,5 @@ def create_model() -> Sequential:
 
         Dense(100, activation='relu', kernel_regularizer=regularizer),
         BatchNormalization(),
-        Dense(4, activation='sigmoid')
+        Dense(FLOWERS_COUNT, activation='sigmoid')
     ])
