@@ -75,3 +75,5 @@ def create_model() -> Sequential:
         BatchNormalization(),
         Dense(FLOWERS_COUNT, activation='sigmoid')
     ])
+
+    return model

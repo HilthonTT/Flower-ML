@@ -1,56 +1,43 @@
 from keras.preprocessing.image import ImageDataGenerator
-import tensorflow as tf
+import os
 
 BATCH_SIZE = 32
 IM_SIZE = 224
+TARGET_SIZE = (IM_SIZE, IM_SIZE)
 
 def load_data():
-    data_dir = "flowers"
+    data_dir = os.path.join(os.path.dirname(__file__), "flowers")
 
     train_datagen = ImageDataGenerator(
         rescale=1.0/255,
         rotation_range=20,
-        width_shift_range=20,
         width_shift_range=0.2,
         height_shift_range=0.2,
         horizontal_flip=True,
         validation_split=0.2)
     
-    dataset = train_datagen.flow_from_directory(
-        data_dir, target_size=(IM_SIZE, IM_SIZE), batch_size=BATCH_SIZE)
+    train_generator = train_datagen.flow_from_directory(
+        directory=data_dir, 
+        target_size=TARGET_SIZE, 
+        batch_size=BATCH_SIZE, 
+        class_mode='categorical',
+        subset='training',
+        shuffle=True)
+
+    val_generator = train_datagen.flow_from_directory(
+        directory=data_dir, 
+        target_size=TARGET_SIZE, 
+        batch_size=BATCH_SIZE, 
+        class_mode='categorical',
+        subset='validation',
+        shuffle=True)
     
-    return dataset
-
-def splits(dataset, train_ratio, val_ratio, test_ratio):
-    DATASET_SIZE = len(dataset)
-
-    train_dataset = dataset.take(int(train_ratio*DATASET_SIZE))
-
-    val_test_dataset = dataset.skip(int(train_ratio*DATASET_SIZE))
-    val_dataset = val_test_dataset.take(int(val_ratio*DATASET_SIZE))
-
-    test_dataset = val_test_dataset.skip(int(test_ratio*DATASET_SIZE))
-
-    return train_dataset, val_dataset, test_dataset
-
-def create_datasets(dataset, train_ratio, val_ratio, test_ratio):
-    train_dataset, val_dataset, test_dataset = splits(dataset[0], train_ratio, val_ratio, test_ratio)
-
-    train_dataset = (
-        train_dataset.shuffle(
-        buffer_size=8, 
-        reshuffle_each_iteration=True).batch(1).prefetch(tf.data.AUTOTUNE)
-        )
+    test_datagen = ImageDataGenerator(rescale=1.0/255)
+    test_generator = test_datagen.flow_from_directory(
+        directory=data_dir, 
+        target_size=TARGET_SIZE, 
+        batch_size=1, 
+        class_mode='categorical',
+        subset='validation')
     
-    val_dataset = (
-        val_dataset
-        .shuffle(buffer_size=8, reshuffle_each_iteration=True)
-        .batch(1)
-        .prefetch(tf.data.AUTOTUNE)
-        )
-    
-    test_dataset = (
-        test_dataset.batch(1)
-    )
-
-    return train_dataset, val_dataset, test_dataset
+    return train_generator, val_generator, test_generator
