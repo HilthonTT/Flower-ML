@@ -1,18 +1,19 @@
 from keras import Sequential
+from keras.regularizers import L2
 from keras.layers import (
     InputLayer, 
     Conv2D, 
-    BatchNormalization, 
     MaxPool2D, 
     Dropout, 
-    Flatten, 
     Dense, 
     RandomRotation, 
     RandomFlip, 
+    RandomContrast,
     Resizing, 
-    Rescaling
+    Rescaling,
+    GlobalAveragePooling2D,
+    BatchNormalization,
 )
-from keras.regularizers import L2
 
 IMAGE_SIZE = 224
 FLOWERS_COUNT = 5
@@ -28,52 +29,55 @@ def create_rescale_layers() -> Sequential:
 def create_augment_layers() -> Sequential:
     layers = Sequential([
         RandomRotation(factor=(0.25, 0.2501)),
-        RandomFlip(mode="horizontal")
+        RandomFlip(mode="horizontal"),
+        RandomContrast(factor=0.1),
     ])
 
     return layers
 
 def create_model() -> Sequential:
-    dropout_rate = 0
-    regularization_rate = 0.01
-    relu_activation = 'relu'
-    valid_padding = 'valid'
-    regularizer = L2(regularization_rate)
-
     resize_rescale_layers = create_rescale_layers()
     augment_layers = create_augment_layers()
 
-    model = Sequential([
-        InputLayer(input_shape=(None, None, 3)),
+    model = Sequential()
 
-        resize_rescale_layers,
-        augment_layers,
+    # Input layer
+    model.add(InputLayer(input_shape=(None, None, 3)))  # Adjust input shape as needed
 
-        Conv2D(filters=6, 
-               kernel_size=3, 
-               strides=1, 
-               padding=valid_padding, 
-               activation=relu_activation, 
-               kernel_regularizer=regularizer),
-        BatchNormalization(),
+    # Rescale layers
+    model.add(resize_rescale_layers)
+    
+    # augment_layers
+    model.add(augment_layers)
 
-        MaxPool2D(pool_size=2, strides=2),
-        Dropout(rate=dropout_rate),
+    # Convolutional Layer 1
+    model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+    model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+    model.add(MaxPool2D((2, 2)))
 
-        Conv2D(filters=16, 
-               kernel_size=3, 
-               strides=1, 
-               padding=valid_padding, 
-               activation=relu_activation, 
-               kernel_regularizer=regularizer),
-        BatchNormalization(),
+    # Convolutional Layer 2
+    model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
+    model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
+    model.add(MaxPool2D((2, 2)))
 
-        MaxPool2D(pool_size=2, strides=2),
-        Flatten(),
+    # Convolutional Layer 3
+    model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
+    model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
+    model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
+    model.add(MaxPool2D((2, 2)))
 
-        Dense(100, activation='relu', kernel_regularizer=regularizer),
-        BatchNormalization(),
-        Dense(FLOWERS_COUNT, activation='sigmoid')
-    ])
+    # Flatten
+    model.add(GlobalAveragePooling2D())
+
+    # Fully Connected Layers
+    model.add(Dense(512, activation='relu', kernel_regularizer=L2(0.01)))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.5))
+    model.add(Dense(256, activation='relu', kernel_regularizer=L2(0.01)))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.5))
+
+    # Output Layer
+    model.add(Dense(FLOWERS_COUNT, activation='softmax'))  # Use softmax for multi-class classification
 
     return model

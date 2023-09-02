@@ -1,8 +1,17 @@
+import os
 from keras import Model
 from keras.optimizers import Adam
-from keras.losses import BinaryCrossentropy
-from keras.metrics import FalseNegatives, FalsePositives, TrueNegatives, TruePositives, Precision, Recall, AUC, BinaryAccuracy
-import os
+from keras.losses import CategoricalCrossentropy
+from keras.metrics import (
+    FalseNegatives, 
+    FalsePositives, 
+    TrueNegatives, 
+    TruePositives, 
+    Precision, 
+    Recall, 
+    AUC, 
+    BinaryAccuracy
+)
 
 CHECKPOINT_PATH = "checkpoint/"
 
@@ -10,8 +19,8 @@ def compile_model(model: Model):
     metrics = [TruePositives(name='tp'), FalsePositives(name='fp'), TrueNegatives(name='tn'), FalseNegatives(name='fn'), 
                BinaryAccuracy(name='accuracy'), Precision(name='precision'), Recall(name='recall'), AUC(name='auc')]
 
-    model.compile(optimizer=Adam(),
-                  loss=BinaryCrossentropy(),
+    model.compile(optimizer=Adam(learning_rate=0.001),
+                  loss=CategoricalCrossentropy(),
                   metrics=metrics)
     
 def save_model_checkpoint(model: Model):
