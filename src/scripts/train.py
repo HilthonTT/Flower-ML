@@ -16,18 +16,26 @@ TEST_RATIO = 0.1
 def main():
     EPOCHS = 20
 
-    train_generator, val_generator, test_generator = load_data()
+    train_generator, train_generator_with_cutmix, val_generator, test_generator = load_data()
+
+    sample_batch_x, sample_batch_y = next(train_generator_with_cutmix)
+    print("Batch X shape:", sample_batch_x.shape)
+    print("Batch Y shape:", sample_batch_y.shape)
+
+    sample_batch_x, sample_batch_y = next(train_generator)
+    print("Batch X shape:", sample_batch_x.shape)
+    print("Batch Y shape:", sample_batch_y.shape)
 
     model = create_model()
     compile_model(model)
 
     history = model.fit(
-        train_generator,
+        train_generator_with_cutmix,
         steps_per_epoch=len(train_generator),
         epochs=EPOCHS,
         validation_data=val_generator,
-        verbose=1,
-        validation_steps=len(val_generator))
+        validation_steps=len(train_generator),
+        verbose=1)
     
     save_model_checkpoint(model)
 
